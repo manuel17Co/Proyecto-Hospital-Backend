@@ -23,6 +23,9 @@ public class Patient {
     public void setEstado(Estado estado) {
         this.estado = estado;
     }
+    public Estado getEstado() {
+        return estado;
+    }
     public long getId() {
         return id;
     }
