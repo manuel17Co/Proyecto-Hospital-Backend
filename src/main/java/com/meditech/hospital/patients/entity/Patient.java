@@ -15,10 +15,13 @@ public class Patient {
     private String telefono;
     
     @Enumerated (EnumType.STRING)
-    private estado estado;
+    private Estado estado;
 
-    public enum estado {
+    public enum Estado {
         ACTIVO, INACTIVO
+    }
+    public void setEstado(Estado estado) {
+        this.estado = estado;
     }
     public long getId() {
         return id;
