@@ -1,13 +1,13 @@
-package com.meditech.patient_service;
+package com.meditech.hospitalService;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PatientServiceApplication {
+public class ExodusApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(PatientServiceApplication.class, args);
+		SpringApplication.run(ExodusApplication.class, args);
 	}
 
 }
