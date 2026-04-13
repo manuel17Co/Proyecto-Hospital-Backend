@@ -56,13 +56,13 @@ public class AuthController {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Unauthorized user");
         }
-
         return this.authService.me(authentication.getName());
     }
 
     @PatchMapping("/me")
     public GetUserDto updateMe(Authentication authentication, @Valid @RequestBody UpdateUserDto request) {
         if (authentication == null || !authentication.isAuthenticated()) {
+            System.out.println("____________________Auth:"+authentication);
             throw new UnauthorizedException("Unauthorized user");
         }
 

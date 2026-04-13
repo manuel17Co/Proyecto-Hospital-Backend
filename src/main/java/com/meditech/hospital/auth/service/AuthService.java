@@ -7,12 +7,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.meditech.hospital.auth.dto.LoginResponseDto;
+import com.meditech.hospital.auth.dto.ResetPasswordCodeResponseDto;
 import com.meditech.hospital.auth.dto.SignupRequestDto;
 import com.meditech.hospital.auth.dto.SignupResponseDto;
 import com.meditech.hospital.auth.enums.TokenType;
 import com.meditech.hospital.common.exception.BadRequestException;
 import com.meditech.hospital.common.exception.ForbiddenException;
 import com.meditech.hospital.common.exception.UnauthorizedException;
+import com.meditech.hospital.common.helpers.OtpGenerator;
 import com.meditech.hospital.users.dto.CreateUserDto;
 import com.meditech.hospital.users.dto.GetUserDto;
 import com.meditech.hospital.users.dto.UpdateUserDto;
@@ -86,6 +88,100 @@ public class AuthService {
         String newRefreshToken = jwtService.generateToken(user.getEmail(), TokenType.REFRESH);
 
         return new LoginResponseDto(newAccessToken, newRefreshToken);
+    }
+
+    public ResetPasswordCodeResponseDto resetPasswordCode(String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String otp = OtpGenerator.generateOtp();
+        redis.opsForValue().set(
+            "otp:reset:" + email,
+            passwordEncoder.encode(otp),
+            Duration.ofMinutes(10)
+        );
+
+        EmailSender emailSender = EmailSender.getInstance();
+
+        ChangePasswordEmailRequestDto variables = new ChangePasswordEmailRequestDto("CanchaFacil", user.getName(), otp, "10", "2026");
+
+        emailSender.sendChangePasswordEmail(email, variables);
+
+        return new ResetPasswordCodeResponseDto("OTP sent to email, valid for 10 minutes");
+    }
+
+    public ValidatePasswordOtpResponse validateOtp(String email, String otp) throws UnauthorizedException {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String storedOtp = redis.opsForValue().get("otp:reset:" + email);
+        if (storedOtp == null || !passwordEncoder.matches(otp, storedOtp)) {
+            throw new UnauthorizedException("Invalid or expired OTP");
+        }
+        redis.delete("otp:reset:" + email);
+        String token = jwtService.generateToken(user.getEmail(), TokenType.PASSWORD_RESET);
+        redis.opsForValue().set("password-reset:" + token, user.getEmail(), Duration.ofMinutes(TokenExpiration.get(TokenType.PASSWORD_RESET) / 60));
+        return new ValidatePasswordOtpResponse(token);
+    }
+
+    public ResetPasswordResponseDto resetPassword(String token, String newPassword) {
+        TokenType tokenType = jwtService.extractTokenType(token);
+        if (tokenType != TokenType.PASSWORD_RESET) {
+            throw new UnauthorizedException("Invalid token type");
+        }
+        String email = jwtService.extractEmail(token);
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        UpdateUserDto updateUserDto = new UpdateUserDto();
+        updateUserDto.setPassword(newPassword);
+        User updatedUser = userService.update(user.getId(), updateUserDto);
+
+        return new ResetPasswordResponseDto("User " + updatedUser.getEmail() + " password updated successfully");
+    }
+
+    public VerificationEmailResponseDto verifyAccount(String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+
+        if (user.getVerified()) {
+            throw new BadRequestException("User already verified");
+        }
+
+        String otp = OtpGenerator.generateOtp();
+        redis.opsForValue().set(
+            "otp:validate:" + email,
+            passwordEncoder.encode(otp),
+            Duration.ofMinutes(10)
+        );
+        EmailSender emailSender = EmailSender.getInstance();
+
+        VerificationEmailRequestDto variables = new VerificationEmailRequestDto("CanchaFacil", user.getName(), otp, "10", "2026");
+
+        emailSender.sendVerificationEmail(email, variables);
+
+        return new VerificationEmailResponseDto("OTP sent to email, valid for 10 minutes");
+    }
+
+    public VerifyEmailOtpResponse validateEmailOtp(String email, String otp) throws UnauthorizedException {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String storedOtp = redis.opsForValue().get("otp:validate:" + email);
+        if (storedOtp == null || !passwordEncoder.matches(otp, storedOtp)) {
+            throw new UnauthorizedException("Invalid or expired OTP");
+        }
+        redis.delete("otp:validate:" + email);
+        UpdateUserDto updateUserDto = new UpdateUserDto();
+        updateUserDto.setVerified(true);
+        User updatedUser = userService.update(user.getId(), updateUserDto);
+        return new VerifyEmailOtpResponse("User " + updatedUser.getEmail() + " verified successfully");
     }
 
     public GetUserDto me(String email) {
