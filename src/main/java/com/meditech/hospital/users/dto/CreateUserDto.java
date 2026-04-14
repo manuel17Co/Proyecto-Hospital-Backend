@@ -1,10 +1,10 @@
-package com.meditech.hospital.auth.dto;
+package com.meditech.hospital.users.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-public class SignupRequestDto {
+public class CreateUserDto {
 
     @NotBlank
     @NotEmpty
@@ -26,29 +26,12 @@ public class SignupRequestDto {
     @Size(min = 8, max = 20)
     private String password;
 
-    public SignupRequestDto() {
-    }
+    public CreateUserDto() {}
 
-    public SignupRequestDto(String name, String surname, String email, String password) {
+    public CreateUserDto(String name, String surname, String email, String password) {
         this.name = name;
         this.surname = surname;
         this.email = email;
-        this.password = password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
         this.password = password;
     }
 
@@ -67,5 +50,20 @@ public class SignupRequestDto {
     public void setSurname(String surname) {
         this.surname = surname;
     }
-}
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
