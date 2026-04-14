@@ -36,7 +36,7 @@ public class UserService {
         newUser.setSurname(user.getSurname());
         newUser.setEmail(user.getEmail());
         newUser.setPassword(passwordEncoder.encode(password));
-        newUser.setVerified(true);
+        newUser.setVerified(false);
 
         User created = userRepository.save(newUser);
 
