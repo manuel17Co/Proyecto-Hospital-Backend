@@ -8,13 +8,21 @@ import org.springframework.stereotype.Service;
 
 import com.meditech.hospital.auth.dto.LoginResponseDto;
 import com.meditech.hospital.auth.dto.ResetPasswordCodeResponseDto;
+import com.meditech.hospital.auth.dto.ResetPasswordResponseDto;
 import com.meditech.hospital.auth.dto.SignupRequestDto;
 import com.meditech.hospital.auth.dto.SignupResponseDto;
+import com.meditech.hospital.auth.dto.ValidatePasswordOtpResponse;
+import com.meditech.hospital.auth.dto.VerificationEmailResponseDto;
+import com.meditech.hospital.auth.dto.VerifyEmailOtpResponse;
+import com.meditech.hospital.auth.enums.TokenExpiration;
 import com.meditech.hospital.auth.enums.TokenType;
+import com.meditech.hospital.common.email.dto.ChangePasswordEmailRequestDto;
+import com.meditech.hospital.common.email.dto.VerificationEmailRequestDto;
 import com.meditech.hospital.common.exception.BadRequestException;
 import com.meditech.hospital.common.exception.ForbiddenException;
 import com.meditech.hospital.common.exception.UnauthorizedException;
 import com.meditech.hospital.common.helpers.OtpGenerator;
+import com.meditech.hospital.common.email.EmailService; // Importamos el nuevo servicio
 import com.meditech.hospital.users.dto.CreateUserDto;
 import com.meditech.hospital.users.dto.GetUserDto;
 import com.meditech.hospital.users.dto.UpdateUserDto;
@@ -27,12 +35,20 @@ public class AuthService {
     private final StringRedisTemplate redis;
     private final JwtService jwtService;
     private final UserService userService;
+    private final EmailService emailService; 
 
-    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtService jwtService, StringRedisTemplate redis) {
+    public AuthService(
+        UserService userService, 
+        PasswordEncoder passwordEncoder, 
+        JwtService jwtService, 
+        StringRedisTemplate redis,
+        EmailService emailService
+    ) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.redis = redis;
+        this.emailService = emailService;
     }
 
     private User validateCredentials(String email, String password) {
@@ -57,7 +73,6 @@ public class AuthService {
     }
 
     public SignupResponseDto signup(SignupRequestDto signupRequest) {
-
         CreateUserDto createUserDto = new CreateUserDto();
         createUserDto.setName(signupRequest.getName());
         createUserDto.setSurname(signupRequest.getSurname());
@@ -69,6 +84,9 @@ public class AuthService {
         if (newUser == null) {
             throw new BadRequestException("User with email " + signupRequest.getEmail() + " already exists");
         }
+
+        // Enviamos el correo de verificación inmediatamente al registrarse
+        this.verifyAccount(newUser.getEmail());
 
         String accessToken = jwtService.generateToken(newUser.getEmail(), TokenType.ACCESS);
         String refreshToken = jwtService.generateToken(newUser.getEmail(), TokenType.REFRESH);
@@ -102,11 +120,9 @@ public class AuthService {
             Duration.ofMinutes(10)
         );
 
-        EmailSender emailSender = EmailSender.getInstance();
+        ChangePasswordEmailRequestDto variables = new ChangePasswordEmailRequestDto("Meditech Hospital", user.getName(), otp, "10", "2026");
 
-        ChangePasswordEmailRequestDto variables = new ChangePasswordEmailRequestDto("CanchaFacil", user.getName(), otp, "10", "2026");
-
-        emailSender.sendChangePasswordEmail(email, variables);
+        emailService.sendChangePasswordEmail(email, variables);
 
         return new ResetPasswordCodeResponseDto("OTP sent to email, valid for 10 minutes");
     }
@@ -159,17 +175,19 @@ public class AuthService {
             passwordEncoder.encode(otp),
             Duration.ofMinutes(10)
         );
-        EmailSender emailSender = EmailSender.getInstance();
 
-        VerificationEmailRequestDto variables = new VerificationEmailRequestDto("CanchaFacil", user.getName(), otp, "10", "2026");
+        // Usamos el nuevo emailService inyectado
+        VerificationEmailRequestDto variables = new VerificationEmailRequestDto("Meditech Hospital", user.getName(), otp, "10", "2026");
 
-        emailSender.sendVerificationEmail(email, variables);
+        emailService.sendVerificationEmail(email, variables);
 
         return new VerificationEmailResponseDto("OTP sent to email, valid for 10 minutes");
     }
 
     public VerifyEmailOtpResponse validateEmailOtp(String email, String otp) throws UnauthorizedException {
+        System.out.println("Entrando al segundo endpoint para validar correo");
         User user = userService.findByEmail(email);
+        System.out.println(user);
         if (user == null) {
             throw new UnauthorizedException("User not found");
         }
@@ -228,5 +246,4 @@ public class AuthService {
             updatedUser.getVerified()
         );
     }
-
 }

@@ -1,4 +1,4 @@
-package com.uammasters.fields.common.email.dto;
+package com.meditech.hospital.common.email.dto;
 
 import java.util.Map;
 
