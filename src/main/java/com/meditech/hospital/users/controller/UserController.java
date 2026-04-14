@@ -3,14 +3,12 @@ package com.meditech.hospital.users.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.meditech.hospital.common.exception.BadRequestException;
-import com.meditech.hospital.common.exception.NotFoundException;
 import com.meditech.hospital.users.dto.CreateUserDto;
 import com.meditech.hospital.users.dto.GetUserDto;
 import com.meditech.hospital.users.entity.User;

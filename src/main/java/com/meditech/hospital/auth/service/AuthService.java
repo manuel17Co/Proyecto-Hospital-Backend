@@ -7,12 +7,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.meditech.hospital.auth.dto.LoginResponseDto;
+import com.meditech.hospital.auth.dto.ResetPasswordCodeResponseDto;
+import com.meditech.hospital.auth.dto.ResetPasswordResponseDto;
 import com.meditech.hospital.auth.dto.SignupRequestDto;
 import com.meditech.hospital.auth.dto.SignupResponseDto;
+import com.meditech.hospital.auth.dto.ValidatePasswordOtpResponse;
+import com.meditech.hospital.auth.dto.VerificationEmailResponseDto;
+import com.meditech.hospital.auth.dto.VerifyEmailOtpResponse;
+import com.meditech.hospital.auth.enums.TokenExpiration;
 import com.meditech.hospital.auth.enums.TokenType;
+import com.meditech.hospital.common.email.dto.ChangePasswordEmailRequestDto;
+import com.meditech.hospital.common.email.dto.VerificationEmailRequestDto;
 import com.meditech.hospital.common.exception.BadRequestException;
 import com.meditech.hospital.common.exception.ForbiddenException;
 import com.meditech.hospital.common.exception.UnauthorizedException;
+import com.meditech.hospital.common.helpers.OtpGenerator;
+import com.meditech.hospital.common.email.EmailService; // Importamos el nuevo servicio
 import com.meditech.hospital.users.dto.CreateUserDto;
 import com.meditech.hospital.users.dto.GetUserDto;
 import com.meditech.hospital.users.dto.UpdateUserDto;
@@ -25,12 +35,20 @@ public class AuthService {
     private final StringRedisTemplate redis;
     private final JwtService jwtService;
     private final UserService userService;
+    private final EmailService emailService; 
 
-    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtService jwtService, StringRedisTemplate redis) {
+    public AuthService(
+        UserService userService, 
+        PasswordEncoder passwordEncoder, 
+        JwtService jwtService, 
+        StringRedisTemplate redis,
+        EmailService emailService
+    ) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.redis = redis;
+        this.emailService = emailService;
     }
 
     private User validateCredentials(String email, String password) {
@@ -55,7 +73,6 @@ public class AuthService {
     }
 
     public SignupResponseDto signup(SignupRequestDto signupRequest) {
-
         CreateUserDto createUserDto = new CreateUserDto();
         createUserDto.setName(signupRequest.getName());
         createUserDto.setSurname(signupRequest.getSurname());
@@ -67,6 +84,9 @@ public class AuthService {
         if (newUser == null) {
             throw new BadRequestException("User with email " + signupRequest.getEmail() + " already exists");
         }
+
+        // Enviamos el correo de verificación inmediatamente al registrarse
+        this.verifyAccount(newUser.getEmail());
 
         String accessToken = jwtService.generateToken(newUser.getEmail(), TokenType.ACCESS);
         String refreshToken = jwtService.generateToken(newUser.getEmail(), TokenType.REFRESH);
@@ -86,6 +106,100 @@ public class AuthService {
         String newRefreshToken = jwtService.generateToken(user.getEmail(), TokenType.REFRESH);
 
         return new LoginResponseDto(newAccessToken, newRefreshToken);
+    }
+
+    public ResetPasswordCodeResponseDto resetPasswordCode(String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String otp = OtpGenerator.generateOtp();
+        redis.opsForValue().set(
+            "otp:reset:" + email,
+            passwordEncoder.encode(otp),
+            Duration.ofMinutes(10)
+        );
+
+        ChangePasswordEmailRequestDto variables = new ChangePasswordEmailRequestDto("Meditech Hospital", user.getName(), otp, "10", "2026");
+
+        emailService.sendChangePasswordEmail(email, variables);
+
+        return new ResetPasswordCodeResponseDto("OTP sent to email, valid for 10 minutes");
+    }
+
+    public ValidatePasswordOtpResponse validateOtp(String email, String otp) throws UnauthorizedException {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String storedOtp = redis.opsForValue().get("otp:reset:" + email);
+        if (storedOtp == null || !passwordEncoder.matches(otp, storedOtp)) {
+            throw new UnauthorizedException("Invalid or expired OTP");
+        }
+        redis.delete("otp:reset:" + email);
+        String token = jwtService.generateToken(user.getEmail(), TokenType.PASSWORD_RESET);
+        redis.opsForValue().set("password-reset:" + token, user.getEmail(), Duration.ofMinutes(TokenExpiration.get(TokenType.PASSWORD_RESET) / 60));
+        return new ValidatePasswordOtpResponse(token);
+    }
+
+    public ResetPasswordResponseDto resetPassword(String token, String newPassword) {
+        TokenType tokenType = jwtService.extractTokenType(token);
+        if (tokenType != TokenType.PASSWORD_RESET) {
+            throw new UnauthorizedException("Invalid token type");
+        }
+        String email = jwtService.extractEmail(token);
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        UpdateUserDto updateUserDto = new UpdateUserDto();
+        updateUserDto.setPassword(newPassword);
+        User updatedUser = userService.update(user.getId(), updateUserDto);
+
+        return new ResetPasswordResponseDto("User " + updatedUser.getEmail() + " password updated successfully");
+    }
+
+    public VerificationEmailResponseDto verifyAccount(String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+
+        if (user.getVerified()) {
+            throw new BadRequestException("User already verified");
+        }
+
+        String otp = OtpGenerator.generateOtp();
+        redis.opsForValue().set(
+            "otp:validate:" + email,
+            passwordEncoder.encode(otp),
+            Duration.ofMinutes(10)
+        );
+
+        // Usamos el nuevo emailService inyectado
+        VerificationEmailRequestDto variables = new VerificationEmailRequestDto("Meditech Hospital", user.getName(), otp, "10", "2026");
+
+        emailService.sendVerificationEmail(email, variables);
+
+        return new VerificationEmailResponseDto("OTP sent to email, valid for 10 minutes");
+    }
+
+    public VerifyEmailOtpResponse validateEmailOtp(String email, String otp) throws UnauthorizedException {
+        System.out.println("Entrando al segundo endpoint para validar correo");
+        User user = userService.findByEmail(email);
+        System.out.println(user);
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        String storedOtp = redis.opsForValue().get("otp:validate:" + email);
+        if (storedOtp == null || !passwordEncoder.matches(otp, storedOtp)) {
+            throw new UnauthorizedException("Invalid or expired OTP");
+        }
+        redis.delete("otp:validate:" + email);
+        UpdateUserDto updateUserDto = new UpdateUserDto();
+        updateUserDto.setVerified(true);
+        User updatedUser = userService.update(user.getId(), updateUserDto);
+        return new VerifyEmailOtpResponse("User " + updatedUser.getEmail() + " verified successfully");
     }
 
     public GetUserDto me(String email) {
@@ -132,5 +246,4 @@ public class AuthService {
             updatedUser.getVerified()
         );
     }
-
 }
