@@ -1,33 +1,23 @@
-package com.meditech.hospital.patients.entity;
+package com.meditech.hospital.patients.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "patients")
-public class Patient {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class PacienteResponse {
     private Long id;
-
-    @Column(nullable = false, length = 100)
     private String nombre;
-
-    @Column(nullable = false, length = 100)
     private String apellido;
-
-    @Column(nullable = false, length = 50, unique = true)
     private String documento;
-
-    @Column(nullable = false, length = 30)
     private String telefono;
-
-    @Column(nullable = false, length = 20)
     private String estado;
+
+    public PacienteResponse() {}
+
+    public PacienteResponse(Long id, String nombre, String apellido, String documento, String telefono, String estado) {
+        this.id = id;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.documento = documento;
+        this.telefono = telefono;
+        this.estado = estado;
+    }
 
     public Long getId() {
         return id;
