@@ -1,0 +1,138 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Proyecto Exodus - API de Gestión Médica Integral",
+    "description": "API centralizada para la gestión de seguridad, pacientes, citas médicas y recursos.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Servidor Local de Desarrollo (Spring Boot)"
+    }
+  ],
+  "paths": {
+    "/auth/signup": { "post": { "tags": ["Autenticación"], "summary": "Registro de nuevo administrador", "operationId": "signup", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignupRequestDto" } } } }, "responses": { "201": { "description": "Usuario creado exitosamente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponseDto" } } } }, "400": { "description": "Datos inválidos o el usuario ya existe" } } } },
+    "/auth/login": { "post": { "tags": ["Autenticación"], "summary": "Inicio de sesión", "operationId": "login", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequestDto" } } } }, "responses": { "200": { "description": "Autenticación exitosa", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponseDto" } } } }, "401": { "description": "Credenciales incorrectas" } } } },
+    "/patients": {
+      "get": { "tags": ["Pacientes"], "summary": "Listar pacientes", "parameters": [{ "name": "estado", "in": "query", "required": false, "schema": { "type": "string", "enum": ["ACTIVO", "INACTIVO"] } }], "responses": { "200": { "description": "Lista de pacientes", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PacienteResponse" } } } } } } },
+      "post": { "tags": ["Pacientes"], "summary": "Crear paciente", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PacienteCreateRequest" } } } }, "responses": { "201": { "description": "Paciente creado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PacienteResponse" } } } } } }
+    },
+    "/patients/{id}": {
+      "get": { "tags": ["Pacientes"], "summary": "Obtener paciente por ID", "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "responses": { "200": { "description": "Paciente encontrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PacienteResponse" } } } }, "404": { "description": "Paciente no encontrado" } } },
+      "put": { "tags": ["Pacientes"], "summary": "Actualizar paciente", "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PacienteCreateRequest" } } } }, "responses": { "200": { "description": "Paciente actualizado" }, "404": { "description": "Paciente no encontrado" } } },
+      "delete": { "tags": ["Pacientes"], "summary": "Eliminar paciente", "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "responses": { "204": { "description": "Paciente eliminado" }, "404": { "description": "Paciente no encontrado" } } }
+    },
+    "/appointments": {
+      "get": {
+        "tags": ["Citas"],
+        "summary": "Listar todas las citas",
+        "parameters": [
+          { "name": "estado", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/AppointmentStatus" } },
+          { "name": "fecha", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de citas obtenida",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AppointmentResponse" } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Citas"],
+        "summary": "Agendar nueva cita",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Cita creada exitosamente",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentResponse" } } }
+          },
+          "400": { "description": "Conflicto de horario o datos inválidos" }
+        }
+      }
+    },
+    "/appointments/{id}": {
+      "get": {
+        "tags": ["Citas"],
+        "summary": "Obtener detalle de una cita",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Detalle de la cita", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentResponse" } } } },
+          "404": { "description": "Cita no encontrada" }
+        }
+      },
+      "put": {
+        "tags": ["Citas"],
+        "summary": "Actualizar información de la cita (Médico/Instalación/Fecha)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentCreateRequest" } } } },
+        "responses": { "200": { "description": "Cita actualizada" }, "404": { "description": "Cita no encontrada" } }
+      },
+      "delete": {
+        "tags": ["Citas"],
+        "summary": "Eliminar cita",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "204": { "description": "Cita eliminada" }, "404": { "description": "Cita no encontrada" } }
+      }
+    },
+    "/appointments/{id}/status": {
+      "patch": {
+        "tags": ["Citas"],
+        "summary": "Cambiar el estado de la cita",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Estado actualizado correctamente" },
+          "400": { "description": "Transición de estado no permitida" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SignupRequestDto": { "type": "object", "required": ["name", "email", "password"], "properties": { "name": { "type": "string" }, "email": { "type": "string", "format": "email" }, "password": { "type": "string", "minLength": 8 } } },
+      "LoginRequestDto": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string" } } },
+      "AuthResponseDto": { "type": "object", "properties": { "accessToken": { "type": "string" }, "refreshToken": { "type": "string" } } },
+      "PacienteCreateRequest": { "type": "object", "required": ["nombre", "apellido", "documento", "telefono"], "properties": { "nombre": { "type": "string" }, "apellido": { "type": "string" }, "documento": { "type": "string" }, "telefono": { "type": "string" } } },
+      "PacienteResponse": { "type": "object", "properties": { "id": { "type": "integer" }, "nombre": { "type": "string" }, "apellido": { "type": "string" }, "documento": { "type": "string" }, "telefono": { "type": "string" }, "estado": { "type": "string" } } },
+      "AppointmentStatus": {
+        "type": "string",
+        "enum": ["PENDIENTE", "CONFIRMADA", "CANCELADA", "COMPLETADA"]
+      },
+      "AppointmentCreateRequest": {
+        "type": "object",
+        "required": ["pacienteId", "medicoId", "instalacionId", "fechaHora"],
+        "properties": {
+          "pacienteId": { "type": "integer", "example": 1 },
+          "medicoId": { "type": "integer", "example": 10 },
+          "instalacionId": { "type": "integer", "example": 5 },
+          "fechaHora": { "type": "string", "format": "date-time", "example": "2026-04-15T10:00:00Z" },
+          "notas": { "type": "string", "example": "Paciente requiere ayuno" }
+        }
+      },
+      "AppointmentStatusRequest": {
+        "type": "object",
+        "required": ["estado"],
+        "properties": { "estado": { "$ref": "#/components/schemas/AppointmentStatus" } }
+      },
+      "AppointmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "fechaHora": { "type": "string", "format": "date-time" },
+          "estado": { "$ref": "#/components/schemas/AppointmentStatus" },
+          "paciente": { "$ref": "#/components/schemas/PacienteResponse" },
+          "medicoId": { "type": "integer" },
+          "instalacionId": { "type": "integer" },
+          "notas": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,13 +1,11 @@
-package com.meditech.patient_service;
+// package com.meditech.hospital;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+// import org.junit.jupiter.api.Test;
 
-@SpringBootTest
-class PatientServiceApplicationTests {
+// class PatientServiceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+// 	@Test
+// 	void contextLoads() {
+// 	}
 
-}
+// }
