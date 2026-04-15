@@ -23,6 +23,9 @@ public class Doctor {
     @Column(nullable = false, length = 100)
     private String especialidad;
 
+    @Column(nullable = true, length = 30)
+    private String telefono;
+
     public Long getId() {
         return id;
     }
@@ -53,5 +56,13 @@ public class Doctor {
 
     public void setEspecialidad(String especialidad) {
         this.especialidad = especialidad;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
     }
 }

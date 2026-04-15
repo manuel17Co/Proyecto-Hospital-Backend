@@ -155,16 +155,15 @@ public class AppointmentService {
     }
 
     private AppointmentResponse toResponse(Appointment a) {
-        Patient p = a.getPaciente();
-        PacienteResponse paciente = new PacienteResponse(
-                p.getId(),
-                p.getNombre(),
-                p.getApellido(),
-                p.getDocumento(),
-                p.getTelefono(),
-                p.getEstado()
-        );
-
+    Patient p = a.getPaciente();
+    PacienteResponse paciente = new PacienteResponse(
+            p.getId(),
+            p.getNombre(),
+            p.getApellido(),
+            p.getDocumento(),
+            p.getTelefono(),
+            p.getEstado() != null ? p.getEstado().name() : null 
+    );
         return new AppointmentResponse(
                 a.getId(),
                 a.getFechaHora() == null ? null : a.getFechaHora().toString(),

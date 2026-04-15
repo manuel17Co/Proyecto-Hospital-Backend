@@ -20,6 +20,9 @@ public class Facility {
     @Column(nullable = false, length = 30)
     private String tipo;
 
+    @Column(nullable = true, length = 255)
+    private String ubicacion;
+
     public Long getId() {
         return id;
     }
@@ -42,5 +45,13 @@ public class Facility {
 
     public void setTipo(String tipo) {
         this.tipo = tipo;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
     }
 }
