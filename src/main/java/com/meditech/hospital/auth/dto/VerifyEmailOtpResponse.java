@@ -1,17 +1,17 @@
 package com.meditech.hospital.auth.dto;
 
 public class VerifyEmailOtpResponse {
-    private String token;
+    private String message;
 
-    public VerifyEmailOtpResponse(String token) {
-        this.token = token;
+    public VerifyEmailOtpResponse(String message) {
+        this.message = message;
     }
 
-    public String getToken() {
-        return token;
+    public String getMessage() {
+        return message;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

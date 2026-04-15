@@ -1,4 +1,6 @@
 package com.meditech.hospital.patients.controller;
+import com.meditech.hospital.appointment.dto.AppointmentResponse;
+import com.meditech.hospital.appointment.service.AppointmentService;
 import com.meditech.hospital.patients.dto.CreatePatientDto;
 import com.meditech.hospital.patients.dto.GetPatientDto;
 import com.meditech.hospital.patients.entity.Patient;
@@ -12,8 +14,11 @@ import java.util.stream.Collectors;
 public class PatientController {
 
     private final PatientService patientService;
-    public PatientController(PatientService patientService) {
+    private final AppointmentService appointmentService;
+
+    public PatientController(PatientService patientService, AppointmentService appointmentService) {
         this.patientService = patientService;
+        this.appointmentService = appointmentService;
     }
     @PostMapping
     public GetPatientDto createPatient(@RequestBody CreatePatientDto createPatientDto) {
@@ -42,6 +47,10 @@ public class PatientController {
         @GetMapping("/{id}")
         public GetPatientDto getById(@PathVariable Long id) {
         return mapToDto(patientService.getPatientById(id));
+    }
+    @GetMapping("/{id}/appointments")
+    public List<AppointmentResponse> getAppointmentsByPatient(@PathVariable Long id) {
+        return appointmentService.listByPatientId(id);
     }
 @PutMapping("/{id}")
     public GetPatientDto update(@PathVariable Long id, @RequestBody CreatePatientDto dto) {

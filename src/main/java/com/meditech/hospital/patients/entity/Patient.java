@@ -10,6 +10,12 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "patients")
 public class Patient {
+
+    public enum Estado {
+        ACTIVO,
+        INACTIVO
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,7 +33,7 @@ public class Patient {
     private String telefono;
 
     @Column(nullable = false, length = 20)
-    private String estado;
+    private Estado estado;
 
     public Long getId() {
         return id;
@@ -69,11 +75,11 @@ public class Patient {
         this.telefono = telefono;
     }
 
-    public String getEstado() {
+    public Estado getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(Estado estado) {
         this.estado = estado;
     }
 }

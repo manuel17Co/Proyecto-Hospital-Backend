@@ -1,7 +1,6 @@
 package com.meditech.hospital.appointment.repository;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,11 +13,21 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("""
         select a from Appointment a
         where (:estado is null or a.estado = :estado)
-          and (:fecha is null or function('date', a.fechaHora) = :fecha)
+          and (
+            :fechaInicio is null
+            or (a.fechaHora >= :fechaInicio and a.fechaHora < :fechaFin)
+          )
         order by a.fechaHora desc
-    """)
+        """)
     List<Appointment> findAllFiltered(@Param("estado") com.meditech.hospital.appointment.entity.AppointmentStatus estado,
-                                      @Param("fecha") LocalDate fecha);
+                                      @Param("fechaInicio") Instant fechaInicio,
+                                      @Param("fechaFin") Instant fechaFin);
+
+    List<Appointment> findByPacienteIdOrderByFechaHoraDesc(Long pacienteId);
+
+    List<Appointment> findByMedicoIdOrderByFechaHoraDesc(Long medicoId);
+
+    List<Appointment> findByInstalacionIdOrderByFechaHoraDesc(Long instalacionId);
 
     @Query("""
         select count(a) > 0 from Appointment a

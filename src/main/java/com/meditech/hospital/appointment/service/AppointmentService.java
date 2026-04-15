@@ -41,7 +41,43 @@ public class AppointmentService {
     }
 
     public List<AppointmentResponse> list(AppointmentStatus estado, LocalDate fecha) {
-        return appointmentRepository.findAllFiltered(estado, fecha)
+        Instant fechaInicio = null;
+        Instant fechaFin = null;
+        if (fecha != null) {
+            fechaInicio = fecha.atStartOfDay(ZoneOffset.UTC).toInstant();
+            fechaFin = fecha.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        }
+        return appointmentRepository.findAllFiltered(estado, fechaInicio, fechaFin)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<AppointmentResponse> listByPatientId(Long patientId) {
+        patientRepository.findById(patientId)
+                .orElseThrow(() -> new NotFoundException("Paciente no encontrado"));
+
+        return appointmentRepository.findByPacienteIdOrderByFechaHoraDesc(patientId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<AppointmentResponse> listByDoctorId(Long doctorId) {
+        doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new NotFoundException("Médico no encontrado"));
+
+        return appointmentRepository.findByMedicoIdOrderByFechaHoraDesc(doctorId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<AppointmentResponse> listByFacilityId(Long facilityId) {
+        facilityRepository.findById(facilityId)
+                .orElseThrow(() -> new NotFoundException("Instalación no encontrada"));
+
+        return appointmentRepository.findByInstalacionIdOrderByFechaHoraDesc(facilityId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -155,16 +191,15 @@ public class AppointmentService {
     }
 
     private AppointmentResponse toResponse(Appointment a) {
-        Patient p = a.getPaciente();
-        PacienteResponse paciente = new PacienteResponse(
-                p.getId(),
-                p.getNombre(),
-                p.getApellido(),
-                p.getDocumento(),
-                p.getTelefono(),
-                p.getEstado()
-        );
-
+    Patient p = a.getPaciente();
+    PacienteResponse paciente = new PacienteResponse(
+            p.getId(),
+            p.getNombre(),
+            p.getApellido(),
+            p.getDocumento(),
+            p.getTelefono(),
+            p.getEstado() != null ? p.getEstado().name() : null 
+    );
         return new AppointmentResponse(
                 a.getId(),
                 a.getFechaHora() == null ? null : a.getFechaHora().toString(),

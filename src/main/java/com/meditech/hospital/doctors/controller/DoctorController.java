@@ -13,24 +13,34 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.meditech.hospital.appointment.dto.AppointmentResponse;
+import com.meditech.hospital.appointment.service.AppointmentService;
 import com.meditech.hospital.doctors.dto.CreateDoctorDto;
 import com.meditech.hospital.doctors.entity.Doctor;
 import com.meditech.hospital.doctors.service.DoctorService;
 
 @RestController
-@RequestMapping("/api/v1/doctors")
+@RequestMapping("/doctors")
 public class DoctorController {
 
     private final DoctorService doctorService;
+    private final AppointmentService appointmentService;
 
-    public DoctorController(DoctorService doctorService) {
+    public DoctorController(DoctorService doctorService, AppointmentService appointmentService) {
         this.doctorService = doctorService;
+        this.appointmentService = appointmentService;
     }
 
     @GetMapping
     public ResponseEntity<List<Doctor>> listarMedicos() {
         return ResponseEntity.ok(doctorService.obtenerTodos());
     }
+
+    @GetMapping("/{id}/appointments")
+    public List<AppointmentResponse> listAppointmentsByDoctor(@PathVariable Long id) {
+        return appointmentService.listByDoctorId(id);
+    }
+
 
     @PostMapping
     public ResponseEntity<Doctor> crearMedico(@RequestBody CreateDoctorDto createDoctorDto) {
