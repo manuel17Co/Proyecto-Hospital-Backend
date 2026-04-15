@@ -14,23 +14,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.meditech.hospital.appointment.dto.AppointmentResponse;
+import com.meditech.hospital.appointment.service.AppointmentService;
 import com.meditech.hospital.facility.dto.CreateFacilityDto;
 import com.meditech.hospital.facility.entity.Facility;
 import com.meditech.hospital.facility.service.FacilityService;
 
 @RestController
-@RequestMapping("/api/v1/facilities")
+@RequestMapping("/facilities")
 public class FacilityController {
 
     private final FacilityService facilityService;
+    private final AppointmentService appointmentService;
 
-    public FacilityController(FacilityService facilityService) {
+    public FacilityController(FacilityService facilityService, AppointmentService appointmentService) {
         this.facilityService = facilityService;
+        this.appointmentService = appointmentService;
     }
 
     @GetMapping
     public ResponseEntity<List<Facility>> listarInstalaciones(@RequestParam(required = false) String tipo) {
         return ResponseEntity.ok(facilityService.obtenerTodas(tipo));
+    }
+
+    @GetMapping("/{id}/appointments")
+    public List<AppointmentResponse> listAppointmentsByFacility(@PathVariable Long id) {
+        return appointmentService.listByFacilityId(id);
     }
 
     @PostMapping

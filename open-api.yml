@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080/api/v1",
-      "description": "Servidor Local de Desarrollo (Spring Boot)"
+      "url": "http://localhost:8080",
+      "description": "Servidor local (Spring Boot). Rutas principales: /appointments, /patients, /doctors, /facilities, /auth."
     }
   ],
   "paths": {
@@ -50,7 +50,8 @@
             "description": "Cita creada exitosamente",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentResponse" } } }
           },
-          "400": { "description": "Conflicto de horario o datos inválidos" }
+          "400": { "description": "Conflicto de horario o datos inválidos" },
+          "404": { "description": "Paciente, médico o instalación no encontrado" }
         }
       }
     },
@@ -69,7 +70,14 @@
         "summary": "Actualizar información de la cita (Médico/Instalación/Fecha)",
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentCreateRequest" } } } },
-        "responses": { "200": { "description": "Cita actualizada" }, "404": { "description": "Cita no encontrada" } }
+        "responses": {
+          "200": {
+            "description": "Cita actualizada",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentResponse" } } }
+          },
+          "400": { "description": "Conflicto de horario o datos inválidos" },
+          "404": { "description": "Cita no encontrada o paciente/médico/instalación inexistente" }
+        }
       },
       "delete": {
         "tags": ["Citas"],
@@ -88,8 +96,12 @@
           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentStatusRequest" } } }
         },
         "responses": {
-          "200": { "description": "Estado actualizado correctamente" },
-          "400": { "description": "Transición de estado no permitida" }
+          "200": {
+            "description": "Estado actualizado correctamente",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppointmentResponse" } } }
+          },
+          "400": { "description": "Transición de estado no permitida" },
+          "404": { "description": "Cita no encontrada" }
         }
       }
     }
