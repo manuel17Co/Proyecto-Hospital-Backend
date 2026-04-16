@@ -67,8 +67,10 @@ public class UserService {
         if (updateUserDto.getSurname() != null) {
             user.setSurname(updateUserDto.getSurname());
         }
-        if (updateUserDto.getEmail() != null) {
+
+        if (updateUserDto.getEmail() != null && !updateUserDto.getEmail().equals(user.getEmail())) {
             user.setEmail(updateUserDto.getEmail());
+            user.setVerified(false);
         }
         if (updateUserDto.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
